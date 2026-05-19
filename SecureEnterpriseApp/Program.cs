@@ -2,10 +2,11 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
 using SecureEnterpriseApp.Data;
+using SecureEnterpriseApp.Middleware;
 using SecureEnterpriseApp.Models;
+using SecureEnterpriseApp.Security;
 using SecureEnterpriseApp.Services;
 using System.Text;
 
@@ -64,7 +65,8 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection")));
+        builder.Configuration.GetConnectionString(
+            "DefaultConnection")));
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -112,7 +114,17 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IJwtService, JwtService>();
 
+builder.Services.AddSingleton<EncryptionService>();
+
+builder.Services.AddSingleton<HmacService>();
+
+builder.Services.AddSingleton<AuditService>();
+
 var app = builder.Build();
+
+app.UseMiddleware<RequestLoggingMiddleware>();
+
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
